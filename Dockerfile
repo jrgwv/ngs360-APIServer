@@ -25,12 +25,24 @@ COPY ./ /app
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --locked --no-dev
 
+# Run as an unprivileged user. The venv is fully built above, so at runtime
+# we never let uv sync, and point HOME/uv cache at a writable location.
+RUN groupadd --system --gid 10001 app \
+  && useradd --system --uid 10001 --gid app --home-dir /home/app --create-home --shell /usr/sbin/nologin app \
+  && chown -R app:app /app
+ENV HOME=/home/app \
+  UV_CACHE_DIR=/home/app/.cache/uv \
+  UV_NO_SYNC=1 \
+  PATH=/app/.venv/bin:$PATH
+
 # Serve on all interfaces inside the container, on the exposed port
 ENV API_HOST=0.0.0.0
 ENV API_PORT=5000
 
 # Expose FastAPI port
 EXPOSE 5000
+
+USER 10001:10001
 
 # Reset the entrypoint (don't invoke `uv`)
 ENTRYPOINT ["/app/entrypoint.sh"]
