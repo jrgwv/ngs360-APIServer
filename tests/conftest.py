@@ -11,6 +11,13 @@ from core.config import get_settings
 from core.deps import get_db, get_opensearch_client, get_s3_client
 from main import app
 
+# Strong, test-only JWT signing key. Non-dev tiers refuse the insecure default
+# (see Settings.JWT_SECRET_KEY), and several tests run with ENVIRONMENT=staging
+# or prod, so provide one (read lazily per access). Never a real secret.
+os.environ.setdefault(
+    "JWT_SECRET_KEY", "test-only-jwt-secret-key-0123456789abcdef"
+)
+
 
 class MockOpenSearchClient:
     """Mock OpenSearch client for testing"""

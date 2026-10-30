@@ -85,3 +85,40 @@ def test_get_config_value_from_default():
         env_var_name='TEST_ENV_VAR',
         default='default_value')
     assert value == 'default_value'
+
+
+class TestJwtSecretValidation:
+    """Non-dev tiers must refuse a default or weak JWT secret (F02)."""
+
+    def test_default_secret_allowed_in_dev(self, monkeypatch):
+        from core.config import INSECURE_DEFAULT_JWT_SECRET
+        monkeypatch.setenv("ENVIRONMENT", "dev")
+        monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+        monkeypatch.delenv("ENV_SECRETS", raising=False)
+        assert Settings().JWT_SECRET_KEY == INSECURE_DEFAULT_JWT_SECRET
+
+    def test_default_secret_refused_outside_dev(self, monkeypatch):
+        import pytest
+        from core.config import InsecureConfigurationError
+        monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+        monkeypatch.delenv("ENV_SECRETS", raising=False)
+        for tier in ("staging", "prod"):
+            monkeypatch.setenv("ENVIRONMENT", tier)
+            with pytest.raises(InsecureConfigurationError):
+                Settings().validate_security()
+
+    def test_short_secret_refused_outside_dev(self, monkeypatch):
+        import pytest
+        from core.config import InsecureConfigurationError
+        monkeypatch.setenv("ENVIRONMENT", "prod")
+        monkeypatch.setenv("JWT_SECRET_KEY", "too-short-secret")
+        with pytest.raises(InsecureConfigurationError) as exc:
+            Settings().validate_security()
+        assert "too-short-secret" not in str(exc.value)
+
+    def test_strong_secret_accepted_outside_dev(self, monkeypatch):
+        strong = "x" * 32
+        monkeypatch.setenv("ENVIRONMENT", "prod")
+        monkeypatch.setenv("JWT_SECRET_KEY", strong)
+        Settings().validate_security()
+        assert Settings().JWT_SECRET_KEY == strong
