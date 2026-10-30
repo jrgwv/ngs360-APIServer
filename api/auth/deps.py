@@ -7,7 +7,7 @@ import uuid
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError
+from jwt import PyJWTError
 from sqlmodel import Session, select
 
 from core.deps import SessionDep
@@ -105,7 +105,7 @@ def get_current_user(
         # Parse the UUID from the string
         user_id = uuid.UUID(user_id_str)
 
-    except (JWTError, ValueError):
+    except (PyJWTError, ValueError):
         raise credentials_exception
 
     user = session.get(User, user_id)
@@ -202,7 +202,7 @@ def optional_current_user(
         user_id = uuid.UUID(user_id_str)
 
         return session.get(User, user_id)
-    except (JWTError, ValueError):
+    except (PyJWTError, ValueError):
         return None
 
 
