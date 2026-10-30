@@ -250,17 +250,19 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def OAUTH_ALLOWED_EMAILS(self) -> frozenset[str]:
+    def OAUTH_ALLOWED_IDENTITIES(self) -> frozenset[str]:
         """
-        Email addresses allowed to sign in through OAuth/SSO (comma separated).
+        Identities allowed to sign in through OAuth/SSO (comma separated).
 
-        Empty means no restriction, which is the upstream behaviour: any account
-        the provider authenticates is created on first sign-in. When set, anyone
-        else is refused with 403 before an account or token is created, so the
-        identity provider's whole population cannot self-provision.
-        Compared case-insensitively and trimmed.
+        Each entry is matched, case-insensitively, against the account's email AND
+        against the provider's login/username claim, because some identity providers
+        (for example a Cognito pool federating a corporate IdP with only the openid
+        scope) release no email at all. Empty means no restriction, which is the
+        upstream behaviour: any account the provider authenticates is created on
+        first sign-in. When set, everyone else is refused with 403 before an account
+        or token is created, so the provider's whole population cannot self-provision.
         """
-        raw = self._get_config_value("OAUTH_ALLOWED_EMAILS", default="")
+        raw = self._get_config_value("OAUTH_ALLOWED_IDENTITIES", default="")
         return frozenset(e.strip().lower() for e in raw.split(",") if e.strip())
 
     @computed_field
