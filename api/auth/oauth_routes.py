@@ -119,13 +119,13 @@ async def oauth_callback(
 
     try:
         # Exchange code for access token
-        logger.debug("Exchanging code (%s) for token with provider %s", code, provider)
+        logger.debug("Exchanging authorization code for token with provider %s", provider)
         token_response = await oauth2_service.exchange_code_for_token(
             provider,
             code,
             redirect_uri
         )
-        logger.debug("Received token response from provider %s: %s", provider, token_response)
+        logger.debug("Received token response from provider %s (keys: %s)", provider, sorted(token_response.keys()))
 
         access_token = token_response.get("access_token")
         refresh_token_oauth = token_response.get("refresh_token")
