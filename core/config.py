@@ -21,7 +21,8 @@ if env_path.exists():
     load_dotenv(env_path)
 
 
-INSECURE_DEFAULT_JWT_SECRET = "change-this-secret-key-in-production"
+# Dev-only sentinel; refused outside dev by Settings.JWT_SECRET_KEY.
+INSECURE_DEFAULT_JWT_SECRET = "change-this-secret-key-in-production"  # nosec B105
 JWT_SECRET_MIN_LENGTH = 32
 
 
