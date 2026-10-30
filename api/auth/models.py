@@ -188,7 +188,8 @@ class OAuthLinkRequest(SQLModel):
 
 class UserPublic(SQLModel):
     """Public user information"""
-    email: str
+    # Optional: SSO providers that release no email create accounts without one.
+    email: str | None
     username: str
     full_name: str | None
     is_active: bool
