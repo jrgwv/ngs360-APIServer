@@ -25,6 +25,10 @@ COPY ./ /app
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --locked --no-dev
 
+# Serve on all interfaces inside the container, on the exposed port
+ENV API_HOST=0.0.0.0
+ENV API_PORT=5000
+
 # Expose FastAPI port
 EXPOSE 5000
 
