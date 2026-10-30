@@ -125,7 +125,9 @@ async def oauth_callback(
             code,
             redirect_uri
         )
-        logger.debug("Received token response from provider %s (keys: %s)", provider, sorted(token_response.keys()))
+        logger.debug(
+            "Received token response from provider %s (keys: %s)",
+            provider, sorted(token_response.keys()))
 
         access_token = token_response.get("access_token")
         refresh_token_oauth = token_response.get("refresh_token")

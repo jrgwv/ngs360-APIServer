@@ -236,6 +236,35 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
+    def LOCAL_AUTH_ENABLED(self) -> bool:
+        """
+        Whether password accounts are available (register, login, password reset,
+        email verification).
+
+        Default true, which is the upstream behaviour. A deployment that signs in
+        only through an OAuth/SSO provider sets this to false, which removes the
+        self-service sign-up path entirely: the routes answer 404.
+        """
+        value = self._get_config_value("LOCAL_AUTH_ENABLED", default="true")
+        return value.strip().lower() not in ("false", "0", "no", "off")
+
+    @computed_field
+    @property
+    def OAUTH_ALLOWED_EMAILS(self) -> frozenset[str]:
+        """
+        Email addresses allowed to sign in through OAuth/SSO (comma separated).
+
+        Empty means no restriction, which is the upstream behaviour: any account
+        the provider authenticates is created on first sign-in. When set, anyone
+        else is refused with 403 before an account or token is created, so the
+        identity provider's whole population cannot self-provision.
+        Compared case-insensitively and trimmed.
+        """
+        raw = self._get_config_value("OAUTH_ALLOWED_EMAILS", default="")
+        return frozenset(e.strip().lower() for e in raw.split(",") if e.strip())
+
+    @computed_field
+    @property
     def LOG_FORMAT(self) -> str:
         """
         Log output format: "json" or "text".
