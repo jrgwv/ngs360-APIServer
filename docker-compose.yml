@@ -33,6 +33,8 @@ services:
     environment:
       # Bind to all interfaces inside the container so Docker's port mapping works
       - API_HOST=0.0.0.0
+      # Local compose keeps the historical 3000 mapping (image default is 5000)
+      - API_PORT=3000
       - client_origin=http://localhost:8080
       # Database variables
       - SQLALCHEMY_DATABASE_URI=mysql+pymysql://root:rootpassword@db:3306/ngs360
