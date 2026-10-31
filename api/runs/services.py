@@ -188,13 +188,14 @@ def search_runs(
     sort_by = sort_by or "run_date"
     sort_order = sort_order or "desc"
     if sort_by == "run_date":
+        # unmapped_type: an index with no documents has no mappings yet
         search_body["sort"] = [
-            {"run_date": {"order": sort_order}},
-            {"run_time.keyword": {"order": sort_order}},
+            {"run_date": {"order": sort_order, "unmapped_type": "date"}},
+            {"run_time.keyword": {"order": sort_order, "unmapped_type": "keyword"}},
         ]
     else:
         search_body["sort"] = [
-            {f"{sort_by}.keyword": {"order": sort_order}},
+            {f"{sort_by}.keyword": {"order": sort_order, "unmapped_type": "keyword"}},
         ]
 
     try:

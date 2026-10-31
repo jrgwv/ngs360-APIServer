@@ -249,3 +249,13 @@ class TestSearchBodyBuilder:
         assert "(*RNA*)" in query_string
         assert "(*Seq*)" in query_string
         assert "(*analysis*)" in query_string
+
+
+def test_search_sort_tolerates_an_index_with_no_documents():
+    """An empty OpenSearch index has no mappings; sorting must not 400 on it."""
+    from core.utils import define_search_body
+
+    body = define_search_body("", 1, 10, "project_id", "desc")
+    assert body["sort"] == [
+        {"project_id.keyword": {"order": "desc", "unmapped_type": "keyword"}}
+    ]
