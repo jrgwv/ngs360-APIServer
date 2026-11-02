@@ -533,7 +533,11 @@ def list_demux_workflow_configs(session: Session, s3_client=None) -> list[str]:
     Returns:
         List of demultiplex workflow configuration filenames (without .yaml extension)
     """
-    bucket, prefix = _get_demux_workflow_configs_s3_location(session)
+    try:
+        bucket, prefix = _get_demux_workflow_configs_s3_location(session)
+    except AttributeError:
+        # DEMUX_WORKFLOW_CONFIGS_BUCKET_URI is not configured
+        return []
 
     try:
         if s3_client is None:
