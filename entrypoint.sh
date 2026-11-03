@@ -1,8 +1,18 @@
 #!/bin/bash
 set -e
 
-echo "Upgrading database, $SQLALCHEMY_DATABASE_URI..."
-uv run alembic upgrade head
+# Use the prebuilt venv binaries directly: no uv sync/cache writes at runtime,
+# which also keeps this working as the non-root container user.
+VENV_BIN="${VENV_BIN:-/app/.venv/bin}"
 
-echo "Starting FastAPI server..."
-exec uv run uvicorn main:app --host ${API_HOST:-127.0.0.1} --port ${API_PORT:-3000} --reload
+echo "Upgrading database..."
+"$VENV_BIN/alembic" upgrade head
+
+echo "Starting FastAPI server (gunicorn + uvicorn workers)..."
+exec "$VENV_BIN/gunicorn" main:app \
+  --workers "${WEB_CONCURRENCY:-4}" \
+  --worker-class uvicorn.workers.UvicornWorker \
+  --bind "${API_HOST:-0.0.0.0}:${API_PORT:-5000}" \
+  --timeout 120 \
+  --access-logfile - \
+  --error-logfile -

@@ -29,14 +29,19 @@ def define_search_body(
         "size": per_page,
     }
 
-    # Add sorting if sort_by is provided
+    # Add sorting if sort_by is provided. `unmapped_type` keeps an index that has
+    # no documents yet (so no field mapping) from failing the search with a 400.
     sort_field = f"{sort_by}.keyword"
 
     if sort_by and sort_order:
-        search_body["sort"] = [{sort_field: {"order": sort_order}}]
+        search_body["sort"] = [
+            {sort_field: {"order": sort_order, "unmapped_type": "keyword"}}
+        ]
     elif sort_by:
         # Default to ascending if only sort_by is provided
-        search_body["sort"] = [{sort_field: {"order": "asc"}}]
+        search_body["sort"] = [
+            {sort_field: {"order": "asc", "unmapped_type": "keyword"}}
+        ]
 
     return search_body
 

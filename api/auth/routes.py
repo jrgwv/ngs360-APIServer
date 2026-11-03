@@ -24,10 +24,23 @@ from api.auth.oauth2_service import get_user_oauth_providers
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+def require_local_auth() -> None:
+    """Hide password-account endpoints when the deployment is SSO only."""
+    if not get_settings().LOCAL_AUTH_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not Found",
+        )
+
+
+LOCAL_AUTH = [Depends(require_local_auth)]
+
+
 @router.post(
     "/register",
     response_model=UserPublic,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    dependencies=LOCAL_AUTH,
 )
 def register(
     session: SessionDep,
@@ -54,7 +67,7 @@ def register(
     return user
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, dependencies=LOCAL_AUTH)
 def login(
     session: SessionDep,
     request: Request,
@@ -194,7 +207,7 @@ def get_current_user_info(
     return user_info
 
 
-@router.post("/password-reset/request")
+@router.post("/password-reset/request", dependencies=LOCAL_AUTH)
 def request_password_reset(
     session: SessionDep,
     reset_request: PasswordResetRequest
@@ -219,7 +232,7 @@ def request_password_reset(
     }
 
 
-@router.post("/password-reset/confirm")
+@router.post("/password-reset/confirm", dependencies=LOCAL_AUTH)
 def confirm_password_reset(
     session: SessionDep,
     reset_data: PasswordResetConfirm
@@ -306,7 +319,7 @@ def change_password(
     return {"message": "Password changed successfully"}
 
 
-@router.post("/verify-email")
+@router.post("/verify-email", dependencies=LOCAL_AUTH)
 def verify_email(
     session: SessionDep,
     verification_data: EmailVerificationRequest
@@ -330,7 +343,7 @@ def verify_email(
     return {"message": "Email verified successfully"}
 
 
-@router.post("/resend-verification")
+@router.post("/resend-verification", dependencies=LOCAL_AUTH)
 def resend_verification(
     session: SessionDep,
     resend_request: ResendVerificationRequest

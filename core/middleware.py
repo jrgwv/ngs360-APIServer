@@ -30,7 +30,7 @@ import uuid
 from typing import Any
 
 from fastapi import Request, Response
-from jose import JWTError
+from jwt import PyJWTError
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 import core.logger  # noqa: F401  -- importing installs the root log handler
@@ -80,7 +80,7 @@ def _resolve_principal(request: Request) -> dict[str, Any]:
 
     try:
         payload = decode_token(credential)
-    except (JWTError, ValueError):
+    except (PyJWTError, ValueError):
         # Malformed, expired or wrongly-signed: still worth recording that
         # someone tried, and with what kind of credential.
         return {"principal": None, "auth_method": "jwt", "auth_valid": False}

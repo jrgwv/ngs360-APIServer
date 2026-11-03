@@ -98,7 +98,8 @@ class OAuth2ProviderConfig:
                 "scope_separator": " ",
                 "field_mapping": {
                     "provider_user_id": "bmsid|sub|id",
-                    "provider_username": "sub|username|login",
+                    "provider_username": "username|sub|login",
+                    "provider_login": "username|preferred_username|login",
                     "email": "email",
                     "name": "name|displayName|email",
                     "picture": "picture",
@@ -342,7 +343,7 @@ async def get_user_info(provider: str, access_token: str) -> dict:
             )
             response.raise_for_status()
             user_data = response.json()
-            logger.info("Received user data from %s: %s", provider, user_data)
+            logger.debug("Received user data from %s (keys: %s)", provider, sorted(user_data.keys()))
 
             # Normalize user data across providers
             return _normalize_user_data(provider, user_data)
@@ -403,6 +404,22 @@ def find_or_create_oauth_user(
     provider_user_id = provider_data.get("provider_user_id")
     provider_username = provider_data.get("provider_username")
     email = provider_data.get("email")
+
+    # Optional allowlist: only listed identities may sign in or be created via SSO.
+    # Matched against the email and the provider's login claim (either may be absent).
+    allowed = get_settings().OAUTH_ALLOWED_IDENTITIES
+    if allowed:
+        candidates = {
+            str(v).strip().lower()
+            for v in (email, provider_data.get("provider_login"))
+            if v
+        }
+        if not candidates & allowed:
+            logger.warning("OAuth sign-in refused: identity not in OAUTH_ALLOWED_IDENTITIES")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account is not permitted to sign in",
+            )
 
     if not provider_user_id or not (email or provider_username):
         raise HTTPException(

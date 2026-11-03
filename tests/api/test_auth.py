@@ -249,6 +249,7 @@ class TestOAuthLogin:
         with patch("api.auth.oauth2_service.get_settings") as mock_settings:
             mock_settings.return_value.client_origin = "http://localhost:3000"
             mock_settings.return_value.OAUTH_CORP_NAME = "corp"
+            mock_settings.return_value.OAUTH_ALLOWED_IDENTITIES = frozenset()
             mock_settings.return_value.OAUTH_CORP_CLIENT_ID = "test_client_id"
             mock_settings.return_value.OAUTH_CORP_CLIENT_SECRET = "test_secret"
             mock_settings.return_value.OAUTH_CORP_AUTHORIZE_URL = "https://oauth.testcorp.com/authorize"  # noqa: E501
@@ -267,6 +268,7 @@ class TestOAuthLogin:
         with patch("api.auth.oauth2_service.get_settings") as mock_settings:
             mock_settings.return_value.client_origin = "http://localhost:3000"
             mock_settings.return_value.OAUTH_CORP_NAME = "corp"
+            mock_settings.return_value.OAUTH_ALLOWED_IDENTITIES = frozenset()
             mock_settings.return_value.OAUTH_CORP_CLIENT_ID = "test_client_id"
             mock_settings.return_value.OAUTH_CORP_CLIENT_SECRET = "test_secret"
             mock_settings.return_value.OAUTH_CORP_AUTHORIZE_URL = "https://oauth.testcorp.com/authorize"  # noqa: E501

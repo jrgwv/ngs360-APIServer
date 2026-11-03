@@ -58,6 +58,10 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("In lifespan...starting up")
 
+    # Refuse to start with insecure security configuration (e.g. the default
+    # JWT secret outside dev). Raising here aborts application startup.
+    get_settings().validate_security()
+
     # Print configuration settings (mask sensitive info)
     logger.info("Configuration Settings:")
 

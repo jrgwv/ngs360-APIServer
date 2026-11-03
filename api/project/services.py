@@ -567,6 +567,7 @@ def search_projects(
     # Construct the search query
     search_body = define_search_body(query, page, per_page, sort_by, sort_order)
 
+    project = None  # referenced by the error handler below, which can run before it is set
     try:
         response = client.search(index="projects", body=search_body)
         total_items = response["hits"]["total"]["value"]

@@ -21,6 +21,15 @@ if env_path.exists():
     load_dotenv(env_path)
 
 
+# Dev-only sentinel; refused outside dev by Settings.JWT_SECRET_KEY.
+INSECURE_DEFAULT_JWT_SECRET = "change-this-secret-key-in-production"  # nosec B105
+JWT_SECRET_MIN_LENGTH = 32
+
+
+class InsecureConfigurationError(RuntimeError):
+    """Raised when security-critical configuration is unsafe for this tier."""
+
+
 def get_secret(secret_name: str, region_name: str) -> dict | None:
     """
     Retrieve secrets from AWS Secrets Manager
@@ -227,6 +236,37 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
+    def LOCAL_AUTH_ENABLED(self) -> bool:
+        """
+        Whether password accounts are available (register, login, password reset,
+        email verification).
+
+        Default true, which is the upstream behaviour. A deployment that signs in
+        only through an OAuth/SSO provider sets this to false, which removes the
+        self-service sign-up path entirely: the routes answer 404.
+        """
+        value = self._get_config_value("LOCAL_AUTH_ENABLED", default="true")
+        return value.strip().lower() not in ("false", "0", "no", "off")
+
+    @computed_field
+    @property
+    def OAUTH_ALLOWED_IDENTITIES(self) -> frozenset[str]:
+        """
+        Identities allowed to sign in through OAuth/SSO (comma separated).
+
+        Each entry is matched, case-insensitively, against the account's email AND
+        against the provider's login/username claim, because some identity providers
+        (for example a Cognito pool federating a corporate IdP with only the openid
+        scope) release no email at all. Empty means no restriction, which is the
+        upstream behaviour: any account the provider authenticates is created on
+        first sign-in. When set, everyone else is refused with 403 before an account
+        or token is created, so the provider's whole population cannot self-provision.
+        """
+        raw = self._get_config_value("OAUTH_ALLOWED_IDENTITIES", default="")
+        return frozenset(e.strip().lower() for e in raw.split(",") if e.strip())
+
+    @computed_field
+    @property
     def LOG_FORMAT(self) -> str:
         """
         Log output format: "json" or "text".
@@ -362,11 +402,34 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def JWT_SECRET_KEY(self) -> str:
-        """Get JWT secret key from env or secrets"""
-        return self._get_config_value(
+        """
+        Get JWT secret key from env or secrets.
+
+        Outside the "dev" tier the key must be set explicitly and be at least
+        JWT_SECRET_MIN_LENGTH characters; the insecure built-in default is
+        refused so a misconfigured deployment cannot mint forgeable tokens.
+        The secret value itself is never included in the error.
+        """
+        value = self._get_config_value(
             "JWT_SECRET_KEY",
-            default="change-this-secret-key-in-production"
+            default=INSECURE_DEFAULT_JWT_SECRET
         )
+        if self.ENVIRONMENT != "dev" and (
+            value == INSECURE_DEFAULT_JWT_SECRET
+            or len(value) < JWT_SECRET_MIN_LENGTH
+        ):
+            raise InsecureConfigurationError(
+                "JWT_SECRET_KEY is unset, uses the insecure default, or is "
+                f"shorter than {JWT_SECRET_MIN_LENGTH} characters "
+                f"(ENVIRONMENT={self.ENVIRONMENT}). Set a strong random value, "
+                "e.g. `openssl rand -hex 32`."
+            )
+        return value
+
+    def validate_security(self) -> None:
+        """Fail fast on insecure security-critical configuration."""
+        # Accessing the property performs the validation.
+        _ = self.JWT_SECRET_KEY
 
     @computed_field
     @property

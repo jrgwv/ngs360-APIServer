@@ -7,7 +7,7 @@ import hashlib
 import secrets
 
 import bcrypt
-from jose import jwt
+import jwt
 from sqlmodel import Session
 
 from core.config import get_settings
@@ -139,7 +139,8 @@ def decode_token(token: str) -> dict[str, Any]:
         Decoded token payload
 
     Raises:
-        JWTError: If token is invalid or expired
+        jwt.PyJWTError: If token is invalid or expired (e.g.
+            jwt.ExpiredSignatureError, jwt.InvalidTokenError)
     """
     settings = get_settings()
 

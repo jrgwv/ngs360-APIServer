@@ -188,13 +188,14 @@ def search_runs(
     sort_by = sort_by or "run_date"
     sort_order = sort_order or "desc"
     if sort_by == "run_date":
+        # unmapped_type: an index with no documents has no mappings yet
         search_body["sort"] = [
-            {"run_date": {"order": sort_order}},
-            {"run_time.keyword": {"order": sort_order}},
+            {"run_date": {"order": sort_order, "unmapped_type": "date"}},
+            {"run_time.keyword": {"order": sort_order, "unmapped_type": "keyword"}},
         ]
     else:
         search_body["sort"] = [
-            {f"{sort_by}.keyword": {"order": sort_order}},
+            {f"{sort_by}.keyword": {"order": sort_order, "unmapped_type": "keyword"}},
         ]
 
     try:
@@ -532,7 +533,11 @@ def list_demux_workflow_configs(session: Session, s3_client=None) -> list[str]:
     Returns:
         List of demultiplex workflow configuration filenames (without .yaml extension)
     """
-    bucket, prefix = _get_demux_workflow_configs_s3_location(session)
+    try:
+        bucket, prefix = _get_demux_workflow_configs_s3_location(session)
+    except AttributeError:
+        # DEMUX_WORKFLOW_CONFIGS_BUCKET_URI is not configured
+        return []
 
     try:
         if s3_client is None:

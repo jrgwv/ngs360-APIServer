@@ -356,7 +356,7 @@ class File(SQLModel, table=True):
         if algorithm == "sha256":
             return hashlib.sha256(file_content).hexdigest()
         elif algorithm == "md5":
-            return hashlib.md5(file_content).hexdigest()
+            return hashlib.md5(file_content, usedforsecurity=False).hexdigest()
         else:
             raise ValueError(f"Unsupported hash algorithm: {algorithm}")
 
